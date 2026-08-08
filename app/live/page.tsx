@@ -13,6 +13,11 @@ type Player = {
   lastSeen?: number;
 };
 
+type Winner = {
+  playerName: string;
+  score: number;
+};
+
 type Room = {
   roomCode: string;
   raceName: string;
@@ -20,6 +25,8 @@ type Room = {
   startingAllowance: number;
   createdAt?: number;
   lastActivity?: number;
+  finishedAt?: number;
+  winner?: Winner | null;
   players: Player[];
 };
 
@@ -57,11 +64,31 @@ function roomStatus(room: Room) {
   return "ACTIVE";
 }
 
+function timeAgo(timestamp?: number) {
+  if (!timestamp) return "Recently";
+
+  const ms = Math.max(0, Date.now() - timestamp);
+  const minutes = Math.floor(ms / 60_000);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function LiveRacesPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"active" | "search">("active");
+
+  const [tab, setTab] =
+    useState<"active" | "finished" | "search">("active");
+
   const [roomCode, setRoomCode] = useState("");
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [activeRooms, setActiveRooms] = useState<Room[]>([]);
+  const [finishedRooms, setFinishedRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
@@ -70,14 +97,26 @@ export default function LiveRacesPage() {
 
   async function loadRooms() {
     try {
-      const response = await fetch(`${API_URL}/api/rooms`, { cache: "no-store" });
-      const data = await response.json();
+      const [activeResponse, finishedResponse] = await Promise.all([
+        fetch(`${API_URL}/api/rooms`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/finished`, { cache: "no-store" }),
+      ]);
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.message || "Unable to load active races");
+      const [activeData, finishedData] = await Promise.all([
+        activeResponse.json(),
+        finishedResponse.json(),
+      ]);
+
+      if (!activeResponse.ok || !activeData.ok) {
+        throw new Error(activeData.message || "Unable to load active races");
       }
 
-      setRooms(Array.isArray(data.rooms) ? data.rooms : []);
+      if (!finishedResponse.ok || !finishedData.ok) {
+        throw new Error(finishedData.message || "Unable to load finished races");
+      }
+
+      setActiveRooms(Array.isArray(activeData.rooms) ? activeData.rooms : []);
+      setFinishedRooms(Array.isArray(finishedData.rooms) ? finishedData.rooms : []);
       setConnected(true);
       setError("");
 
@@ -86,7 +125,7 @@ export default function LiveRacesPage() {
       setClockNow(now);
     } catch (err) {
       setConnected(false);
-      setError(err instanceof Error ? err.message : "Unable to load active races");
+      setError(err instanceof Error ? err.message : "Unable to load races");
     } finally {
       setLoading(false);
     }
@@ -103,19 +142,34 @@ export default function LiveRacesPage() {
     return () => clearInterval(clock);
   }, []);
 
-  const sortedRooms = useMemo(() => {
-    return [...rooms].sort((a, b) => {
+  const sortedActive = useMemo(() => {
+    return [...activeRooms].sort((a, b) => {
       const aRunning = roomStatus(a) === "RUNNING" ? 1 : 0;
       const bRunning = roomStatus(b) === "RUNNING" ? 1 : 0;
-      if (aRunning !== bRunning) return bRunning - aRunning;
+
+      if (aRunning !== bRunning) {
+        return bRunning - aRunning;
+      }
+
       return (b.lastActivity || 0) - (a.lastActivity || 0);
     });
-  }, [rooms]);
+  }, [activeRooms]);
+
+  const sortedFinished = useMemo(() => {
+    return [...finishedRooms].sort(
+      (a, b) => (b.finishedAt || b.lastActivity || 0) - (a.finishedAt || a.lastActivity || 0)
+    );
+  }, [finishedRooms]);
 
   function submitSearch(event: FormEvent) {
     event.preventDefault();
+
     const normalised = roomCode.trim().toUpperCase();
-    if (!normalised) return;
+
+    if (!normalised) {
+      return;
+    }
+
     router.push(`/race/${encodeURIComponent(normalised)}`);
   }
 
@@ -140,12 +194,16 @@ export default function LiveRacesPage() {
             0GP <span className="text-yellow-500">RACE</span>
           </Link>
 
-          <div className={`flex items-center gap-2 text-xs font-black ${
-            connected ? "text-green-400" : "text-red-400"
-          }`}>
-            <span className={`h-2 w-2 rounded-full ${
-              connected ? "animate-pulse bg-green-400" : "bg-red-400"
-            }`} />
+          <div
+            className={`flex items-center gap-2 text-xs font-black ${
+              connected ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connected ? "animate-pulse bg-green-400" : "bg-red-400"
+              }`}
+            />
             {connected ? "LIVE CONNECTION" : "RECONNECTING"}
           </div>
         </div>
@@ -162,50 +220,53 @@ export default function LiveRacesPage() {
           </h1>
 
           <p className="mt-5 text-lg leading-8 text-zinc-400">
-            Find a race by room code or browse every race currently active on the hosted server.
+            Browse races that are live now, see recently finished results, or
+            jump straight to a room code.
           </p>
         </div>
 
-        <div className="mt-10 inline-flex rounded-2xl border border-white/10 bg-zinc-950 p-1">
-          <button
-            type="button"
+        <div className="mt-10 inline-flex flex-wrap rounded-2xl border border-white/10 bg-zinc-950 p-1">
+          <TabButton
+            active={tab === "active"}
             onClick={() => setTab("active")}
-            className={`rounded-xl px-5 py-3 text-sm font-black transition ${
-              tab === "active"
-                ? "bg-yellow-500 text-black"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            ACTIVE RACES
-            {rooms.length > 0 && (
-              <span className="ml-2 rounded-full bg-black/20 px-2 py-0.5 text-xs">
-                {rooms.length}
-              </span>
-            )}
-          </button>
+            label="ACTIVE RACES"
+            count={activeRooms.length}
+          />
 
-          <button
-            type="button"
+          <TabButton
+            active={tab === "finished"}
+            onClick={() => setTab("finished")}
+            label="FINISHED RACES"
+            count={finishedRooms.length}
+          />
+
+          <TabButton
+            active={tab === "search"}
             onClick={() => setTab("search")}
-            className={`rounded-xl px-5 py-3 text-sm font-black transition ${
-              tab === "search"
-                ? "bg-yellow-500 text-black"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            FIND A RACE
-          </button>
+            label="FIND A RACE"
+          />
         </div>
 
-        {tab === "search" ? (
+        {error && (
+          <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/[0.05] px-5 py-4 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {tab === "search" && (
           <section className="mt-8 max-w-2xl rounded-3xl border border-white/10 bg-zinc-950 p-7 sm:p-9">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
               Room Search
             </p>
 
-            <h2 className="mt-3 text-2xl font-black">Enter a room code</h2>
+            <h2 className="mt-3 text-2xl font-black">
+              Enter a room code
+            </h2>
 
-            <form onSubmit={submitSearch} className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <form
+              onSubmit={submitSearch}
+              className="mt-6 flex flex-col gap-3 sm:flex-row"
+            >
               <input
                 value={roomCode}
                 onChange={(event) => setRoomCode(event.target.value)}
@@ -225,33 +286,23 @@ export default function LiveRacesPage() {
               Room codes are not case-sensitive.
             </p>
           </section>
-        ) : (
+        )}
+
+        {tab === "active" && (
           <section className="mt-8">
             {loading ? (
-              <div className="rounded-3xl border border-white/10 bg-zinc-950 p-12 text-center">
-                <div className="mx-auto h-3 w-3 animate-pulse rounded-full bg-yellow-500" />
-                <p className="mt-5 font-black text-yellow-500">
-                  Loading active races...
-                </p>
-              </div>
-            ) : error && rooms.length === 0 ? (
-              <div className="rounded-3xl border border-red-500/30 bg-red-500/[0.05] p-8">
-                <p className="font-black text-red-400">
-                  Unable to load active races
-                </p>
-                <p className="mt-2 text-zinc-500">{error}</p>
-              </div>
-            ) : sortedRooms.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/15 bg-zinc-950 p-12 text-center">
-                <p className="text-xl font-black">No active races right now.</p>
-                <p className="mt-3 text-zinc-500">
-                  Start an online race in RuneLite and it will appear here automatically.
-                </p>
-              </div>
+              <LoadingCard text="Loading active races..." />
+            ) : sortedActive.length === 0 ? (
+              <EmptyCard
+                title="No active races right now."
+                text="Start an online race in RuneLite and it will appear here automatically."
+              />
             ) : (
               <div className="grid gap-5 lg:grid-cols-2">
-                {sortedRooms.map((room) => {
-                  const players = [...room.players].sort((a, b) => b.score - a.score);
+                {sortedActive.map((room) => {
+                  const players = [...room.players].sort(
+                    (a, b) => b.score - a.score
+                  );
                   const leader = players[0];
                   const status = roomStatus(room);
                   const remaining = liveRemaining(leader);
@@ -265,17 +316,20 @@ export default function LiveRacesPage() {
                       <div className="flex items-start justify-between gap-5">
                         <div className="min-w-0">
                           <div className="flex items-center gap-3">
-                            <span className={`h-2 w-2 rounded-full ${
-                              status === "RUNNING"
-                                ? "animate-pulse bg-green-400"
-                                : "bg-yellow-400"
-                            }`} />
-
-                            <span className={`text-xs font-black uppercase tracking-[0.2em] ${
-                              status === "RUNNING"
-                                ? "text-green-400"
-                                : "text-yellow-400"
-                            }`}>
+                            <span
+                              className={`h-2 w-2 rounded-full ${
+                                status === "RUNNING"
+                                  ? "animate-pulse bg-green-400"
+                                  : "bg-yellow-400"
+                              }`}
+                            />
+                            <span
+                              className={`text-xs font-black uppercase tracking-[0.2em] ${
+                                status === "RUNNING"
+                                  ? "text-green-400"
+                                  : "text-yellow-400"
+                              }`}
+                            >
                               {status}
                             </span>
                           </div>
@@ -315,8 +369,131 @@ export default function LiveRacesPage() {
             )}
           </section>
         )}
+
+        {tab === "finished" && (
+          <section className="mt-8">
+            {loading ? (
+              <LoadingCard text="Loading finished races..." />
+            ) : sortedFinished.length === 0 ? (
+              <EmptyCard
+                title="No finished races yet."
+                text="Completed races will stay here for roughly 24 hours with the current server setup."
+              />
+            ) : (
+              <div className="grid gap-5 lg:grid-cols-2">
+                {sortedFinished.map((room) => {
+                  const standings = [...room.players].sort(
+                    (a, b) => b.score - a.score
+                  );
+
+                  const winner =
+                    room.winner ||
+                    standings.find(
+                      (player) =>
+                        String(player.raceState || "").toUpperCase() === "FINISHED"
+                    ) ||
+                    standings[0];
+
+                  return (
+                    <Link
+                      key={room.roomCode}
+                      href={`/race/${room.roomCode}`}
+                      className="group rounded-3xl border border-white/10 bg-zinc-950 p-7 transition hover:-translate-y-1 hover:border-yellow-500/50"
+                    >
+                      <div className="flex items-start justify-between gap-5">
+                        <div className="min-w-0">
+                          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+                            FINISHED
+                          </p>
+
+                          <h2 className="mt-4 truncate text-2xl font-black">
+                            {room.raceName || "0GP Race"}
+                          </h2>
+
+                          <p className="mt-1 font-mono text-sm text-yellow-500">
+                            {room.roomCode}
+                          </p>
+                        </div>
+
+                        <div className="shrink-0 rounded-xl border border-white/10 bg-black px-4 py-3 text-right">
+                          <p className="text-xs uppercase text-zinc-600">
+                            Finished
+                          </p>
+                          <p className="mt-1 font-black text-zinc-300">
+                            {timeAgo(room.finishedAt || room.lastActivity)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-7 rounded-2xl border border-yellow-500/20 bg-yellow-500/[0.04] p-5">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-500">
+                          Winner
+                        </p>
+                        <div className="mt-2 flex items-end justify-between gap-4">
+                          <p className="truncate text-xl font-black">
+                            🏆 {winner?.playerName || "—"}
+                          </p>
+                          <p className="shrink-0 font-black text-yellow-500">
+                            {winner ? shortGP(winner.score) : "0 GP"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
+                        <RaceStat label="Players" value={standings.length.toString()} />
+                        <RaceStat
+                          label="Duration"
+                          value={formatTime(room.durationMilliseconds)}
+                        />
+                        <RaceStat
+                          label="Top Score"
+                          value={winner ? shortGP(winner.score) : "0 GP"}
+                        />
+                      </div>
+
+                      <div className="mt-7 text-sm font-black text-yellow-500">
+                        VIEW RESULTS →
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </section>
     </main>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl px-5 py-3 text-sm font-black transition ${
+        active
+          ? "bg-yellow-500 text-black"
+          : "text-zinc-400 hover:text-white"
+      }`}
+    >
+      {label}
+      {typeof count === "number" && count > 0 && (
+        <span className="ml-2 rounded-full bg-black/20 px-2 py-0.5 text-xs">
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -325,6 +502,24 @@ function RaceStat({ label, value }: { label: string; value: string }) {
     <div className="min-w-0">
       <p className="text-xs uppercase text-zinc-600">{label}</p>
       <p className="mt-1 truncate font-black">{value}</p>
+    </div>
+  );
+}
+
+function LoadingCard({ text }: { text: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-zinc-950 p-12 text-center">
+      <div className="mx-auto h-3 w-3 animate-pulse rounded-full bg-yellow-500" />
+      <p className="mt-5 font-black text-yellow-500">{text}</p>
+    </div>
+  );
+}
+
+function EmptyCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-white/15 bg-zinc-950 p-12 text-center">
+      <p className="text-xl font-black">{title}</p>
+      <p className="mt-3 text-zinc-500">{text}</p>
     </div>
   );
 }
