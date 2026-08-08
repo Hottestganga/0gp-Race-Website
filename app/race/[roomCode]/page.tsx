@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 type Player = {
   playerName: string;
-  score: number;
+  score: number
   remainingMilliseconds: number;
   loggedIn: boolean;
   raceState: string;
