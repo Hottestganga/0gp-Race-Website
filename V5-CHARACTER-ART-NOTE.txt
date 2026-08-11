@@ -1,0 +1,24 @@
+0GP RACE WEBSITE v5 - CHARACTER ART EDITION
+
+This revision is aimed specifically at matching the concept screenshot direction:
+- visible old-school low-poly fantasy adventurers on the LEFT
+- dragon / volcanic fantasy combat scene on the RIGHT
+- website panels in the centre
+- black/gold game UI layered over the scenery
+
+The artwork is original generated fantasy artwork created for this website.
+It is OSRS-inspired in atmosphere, but does not copy Jagex game assets.
+
+Functionality remains unchanged:
+- same Render API
+- same live room polling
+- same RuneLite plugin communication
+- same race logic
+
+INSTALL:
+Extract over the current website project.
+Stop server: Ctrl+C
+Clear cache:
+Remove-Item -Recurse -Force .next
+Run:
+npm.cmd run dev

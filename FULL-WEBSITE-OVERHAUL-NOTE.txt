@@ -1,0 +1,45 @@
+0GP RACE WEBSITE - FULL FRONTEND OVERHAUL
+
+WHY IT LOOKED THE SAME BEFORE
+-----------------------------
+The first redesign changed ONLY the individual live race route:
+
+app\race\[roomCode]\page.tsx
+
+Your uploaded project confirms that new 1003-line race page IS ALREADY INSTALLED.
+
+If you opened:
+http://localhost:3000/
+
+you were looking at app\page.tsx, which had not yet been redesigned.
+So it correctly still looked like the old homepage.
+
+THIS BUILD NOW ALSO UPDATES:
+- app\page.tsx           HOME PAGE
+- app\live\page.tsx     LIVE RACES BROWSER
+
+AND PRESERVES:
+- app\race\[roomCode]\page.tsx  NEW LIVE RACE DASHBOARD
+- all API endpoints
+- Render connection
+- 2-second live fetching
+- plugin communication
+- race logic
+
+RUN
+---
+From the website project folder:
+
+npm.cmd run dev
+
+Then test:
+
+http://localhost:3000/
+http://localhost:3000/live
+
+And open an actual race from /live to see the new race dashboard.
+
+If the browser still shows cached output:
+Ctrl+C
+Remove-Item -Recurse -Force .next
+npm.cmd run dev

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FantasyShell, SiteNav, SectionTitle } from "../components/FantasyShell";
 
 type Player = {
   playerName: string;
@@ -187,104 +188,60 @@ export default function LiveRacesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <nav className="border-b border-white/10 bg-black/90">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-xl font-black">
-            0GP <span className="text-yellow-500">RACE</span>
-          </Link>
+    <FantasyShell>
+      <SiteNav active="live" />
 
-          <div
-            className={`flex items-center gap-2 text-xs font-black ${
-              connected ? "text-green-400" : "text-red-400"
-            }`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                connected ? "animate-pulse bg-green-400" : "bg-red-400"
-              }`}
-            />
-            {connected ? "LIVE CONNECTION" : "RECONNECTING"}
+      <section className="site-center-wide px-4 py-12 sm:px-7 lg:py-16">
+        <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-end">
+          <SectionTitle
+            eyebrow="Spectator Arena"
+            title="Live Races"
+            text="Browse active rooms, inspect recently finished battles or jump directly to a room code."
+          />
+
+          <div className="game-panel rounded-2xl p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[.22em] text-zinc-700">Network</div>
+                <div className={`mt-2 font-black ${connected ? "text-lime-400" : "text-red-400"}`}>
+                  {connected ? "● LIVE CONNECTION" : "● RECONNECTING"}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[9px] font-black uppercase tracking-[.22em] text-zinc-700">Active rooms</div>
+                <div className="mt-2 text-2xl font-black text-yellow-300">{activeRooms.length}</div>
+              </div>
+            </div>
           </div>
         </div>
-      </nav>
 
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <div className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-500">
-            Spectator Mode
-          </p>
-
-          <h1 className="mt-4 text-4xl font-black sm:text-6xl">
-            WATCH 0GP RACES
-          </h1>
-
-          <p className="mt-5 text-lg leading-8 text-zinc-400">
-            Browse races that are live now, see recently finished results, or
-            jump straight to a room code.
-          </p>
-        </div>
-
-        <div className="mt-10 inline-flex flex-wrap rounded-2xl border border-white/10 bg-zinc-950 p-1">
-          <TabButton
-            active={tab === "active"}
-            onClick={() => setTab("active")}
-            label="ACTIVE RACES"
-            count={activeRooms.length}
-          />
-
-          <TabButton
-            active={tab === "finished"}
-            onClick={() => setTab("finished")}
-            label="FINISHED RACES"
-            count={finishedRooms.length}
-          />
-
-          <TabButton
-            active={tab === "search"}
-            onClick={() => setTab("search")}
-            label="FIND A RACE"
-          />
+        <div className="mt-9 flex flex-wrap gap-2">
+          <TabButton active={tab === "active"} onClick={() => setTab("active")} label="ACTIVE ARENAS" count={activeRooms.length} />
+          <TabButton active={tab === "finished"} onClick={() => setTab("finished")} label="FINISHED" count={finishedRooms.length} />
+          <TabButton active={tab === "search"} onClick={() => setTab("search")} label="ROOM LOOKUP" />
         </div>
 
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/[0.05] px-5 py-4 text-sm text-red-300">
+          <div className="mt-7 border border-red-500/30 bg-red-500/[.06] px-5 py-4 text-sm text-red-300">
             {error}
           </div>
         )}
 
         {tab === "search" && (
-          <section className="mt-8 max-w-2xl rounded-3xl border border-white/10 bg-zinc-950 p-7 sm:p-9">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
-              Room Search
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black">
-              Enter a room code
-            </h2>
-
-            <form
-              onSubmit={submitSearch}
-              className="mt-6 flex flex-col gap-3 sm:flex-row"
-            >
+          <section className="game-panel mt-8 max-w-2xl rounded-2xl p-7">
+            <div className="text-[9px] font-black uppercase tracking-[.25em] text-yellow-400">Find a battle</div>
+            <h2 className="mt-3 text-2xl font-black">Enter a room code</h2>
+            <form onSubmit={submitSearch} className="mt-6 flex flex-col gap-3 sm:flex-row">
               <input
                 value={roomCode}
                 onChange={(event) => setRoomCode(event.target.value)}
                 placeholder="0GP-5767"
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black px-5 py-4 font-mono text-lg font-bold uppercase text-white outline-none transition placeholder:text-zinc-700 focus:border-yellow-500"
+                className="min-w-0 flex-1 border border-yellow-500/20 bg-black/70 px-5 py-4 font-mono text-lg font-bold uppercase text-white outline-none placeholder:text-zinc-800 focus:border-yellow-400"
               />
-
-              <button
-                type="submit"
-                className="rounded-xl bg-yellow-500 px-7 py-4 font-black text-black transition hover:bg-yellow-400"
-              >
-                WATCH RACE
+              <button type="submit" className="bg-yellow-400 px-7 py-4 font-black text-black hover:bg-yellow-300">
+                ENTER ARENA
               </button>
             </form>
-
-            <p className="mt-4 text-sm text-zinc-600">
-              Room codes are not case-sensitive.
-            </p>
           </section>
         )}
 
@@ -293,16 +250,11 @@ export default function LiveRacesPage() {
             {loading ? (
               <LoadingCard text="Loading active races..." />
             ) : sortedActive.length === 0 ? (
-              <EmptyCard
-                title="No active races right now."
-                text="Start an online race in RuneLite and it will appear here automatically."
-              />
+              <EmptyCard title="No active arenas right now." text="Start an online race in RuneLite and it will appear here automatically." />
             ) : (
               <div className="grid gap-5 lg:grid-cols-2">
                 {sortedActive.map((room) => {
-                  const players = [...room.players].sort(
-                    (a, b) => b.score - a.score
-                  );
+                  const players = [...room.players].sort((a, b) => b.score - a.score);
                   const leader = players[0];
                   const status = roomStatus(room);
                   const remaining = liveRemaining(leader);
@@ -311,56 +263,36 @@ export default function LiveRacesPage() {
                     <Link
                       key={room.roomCode}
                       href={`/race/${room.roomCode}`}
-                      className="group rounded-3xl border border-white/10 bg-zinc-950 p-7 transition hover:-translate-y-1 hover:border-yellow-500/50"
+                      className="game-panel group overflow-hidden rounded-2xl transition hover:-translate-y-1 hover:border-yellow-300/45"
                     >
-                      <div className="flex items-start justify-between gap-5">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`h-2 w-2 rounded-full ${
-                                status === "RUNNING"
-                                  ? "animate-pulse bg-green-400"
-                                  : "bg-yellow-400"
-                              }`}
-                            />
-                            <span
-                              className={`text-xs font-black uppercase tracking-[0.2em] ${
-                                status === "RUNNING"
-                                  ? "text-green-400"
-                                  : "text-yellow-400"
-                              }`}
-                            >
-                              {status}
-                            </span>
+                      <div className="h-1 bg-gradient-to-r from-yellow-800 via-yellow-300 to-yellow-800" />
+                      <div className="p-6">
+                        <div className="flex items-start justify-between gap-5">
+                          <div className="min-w-0">
+                            <div className={`text-[9px] font-black uppercase tracking-[.25em] ${status === "RUNNING" ? "text-lime-400" : "text-yellow-400"}`}>
+                              {status === "RUNNING" ? "● LIVE BATTLE" : "● " + status}
+                            </div>
+                            <h2 className="mt-3 truncate text-2xl font-black">{room.raceName || "0GP Race"}</h2>
+                            <p className="mt-2 font-mono text-xs font-black tracking-widest text-yellow-400">{room.roomCode}</p>
                           </div>
 
-                          <h2 className="mt-4 truncate text-2xl font-black">
-                            {room.raceName || "0GP Race"}
-                          </h2>
-
-                          <p className="mt-1 font-mono text-sm text-yellow-500">
-                            {room.roomCode}
-                          </p>
+                          <div className="border border-yellow-500/15 bg-black/60 px-4 py-3 text-right">
+                            <div className="text-[8px] font-black uppercase tracking-[.18em] text-zinc-700">Leader time</div>
+                            <div className="mt-1 font-mono font-black text-zinc-200">{formatTime(remaining)}</div>
+                          </div>
                         </div>
 
-                        <div className="shrink-0 rounded-xl border border-white/10 bg-black px-4 py-3 text-right">
-                          <p className="text-xs uppercase text-zinc-600">
-                            Leader Time
-                          </p>
-                          <p className="mt-1 font-mono font-black">
-                            {formatTime(remaining)}
-                          </p>
+                        <div className="gold-line mt-6" />
+                        <div className="mt-6 grid grid-cols-3 gap-3">
+                          <RaceStat label="Racers" value={players.length.toString()} />
+                          <RaceStat label="Leader" value={leader?.playerName || "—"} />
+                          <RaceStat label="Top score" value={leader ? shortGP(leader.score) : "0 GP"} />
                         </div>
-                      </div>
 
-                      <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
-                        <RaceStat label="Players" value={players.length.toString()} />
-                        <RaceStat label="Leader" value={leader?.playerName || "—"} />
-                        <RaceStat label="Top Score" value={leader ? shortGP(leader.score) : "0 GP"} />
-                      </div>
-
-                      <div className="mt-7 text-sm font-black text-yellow-500">
-                        WATCH RACE →
+                        <div className="mt-6 flex items-center justify-between text-[10px] font-black uppercase tracking-[.2em]">
+                          <span className="text-zinc-700">{timeAgo(room.lastActivity)}</span>
+                          <span className="text-yellow-300">WATCH LIVE →</span>
+                        </div>
                       </div>
                     </Link>
                   );
@@ -375,84 +307,28 @@ export default function LiveRacesPage() {
             {loading ? (
               <LoadingCard text="Loading finished races..." />
             ) : sortedFinished.length === 0 ? (
-              <EmptyCard
-                title="No finished races yet."
-                text="Completed races will stay here for roughly 24 hours with the current server setup."
-              />
+              <EmptyCard title="No finished races yet." text="Completed races will appear here while the server retains their results." />
             ) : (
               <div className="grid gap-5 lg:grid-cols-2">
                 {sortedFinished.map((room) => {
-                  const standings = [...room.players].sort(
-                    (a, b) => b.score - a.score
-                  );
-
-                  const winner =
-                    room.winner ||
-                    standings.find(
-                      (player) =>
-                        String(player.raceState || "").toUpperCase() === "FINISHED"
-                    ) ||
-                    standings[0];
+                  const standings = [...room.players].sort((a, b) => b.score - a.score);
+                  const winner = room.winner || standings[0];
 
                   return (
-                    <Link
-                      key={room.roomCode}
-                      href={`/race/${room.roomCode}`}
-                      className="group rounded-3xl border border-white/10 bg-zinc-950 p-7 transition hover:-translate-y-1 hover:border-yellow-500/50"
-                    >
-                      <div className="flex items-start justify-between gap-5">
+                    <Link key={room.roomCode} href={`/race/${room.roomCode}`} className="game-panel group rounded-2xl p-6 transition hover:-translate-y-1 hover:border-yellow-300/45">
+                      <div className="flex items-center gap-4">
+                        <div className="text-4xl">🏆</div>
                         <div className="min-w-0">
-                          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
-                            FINISHED
-                          </p>
-
-                          <h2 className="mt-4 truncate text-2xl font-black">
-                            {room.raceName || "0GP Race"}
-                          </h2>
-
-                          <p className="mt-1 font-mono text-sm text-yellow-500">
-                            {room.roomCode}
-                          </p>
-                        </div>
-
-                        <div className="shrink-0 rounded-xl border border-white/10 bg-black px-4 py-3 text-right">
-                          <p className="text-xs uppercase text-zinc-600">
-                            Finished
-                          </p>
-                          <p className="mt-1 font-black text-zinc-300">
-                            {timeAgo(room.finishedAt || room.lastActivity)}
-                          </p>
+                          <div className="text-[9px] font-black uppercase tracking-[.22em] text-zinc-600">Completed battle</div>
+                          <h2 className="mt-2 truncate text-xl font-black">{room.raceName || "0GP Race"}</h2>
+                          <div className="mt-1 font-mono text-xs text-yellow-400">{room.roomCode}</div>
                         </div>
                       </div>
-
-                      <div className="mt-7 rounded-2xl border border-yellow-500/20 bg-yellow-500/[0.04] p-5">
-                        <p className="text-xs font-black uppercase tracking-[0.2em] text-yellow-500">
-                          Winner
-                        </p>
-                        <div className="mt-2 flex items-end justify-between gap-4">
-                          <p className="truncate text-xl font-black">
-                            🏆 {winner?.playerName || "—"}
-                          </p>
-                          <p className="shrink-0 font-black text-yellow-500">
-                            {winner ? shortGP(winner.score) : "0 GP"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
-                        <RaceStat label="Players" value={standings.length.toString()} />
-                        <RaceStat
-                          label="Duration"
-                          value={formatTime(room.durationMilliseconds)}
-                        />
-                        <RaceStat
-                          label="Top Score"
-                          value={winner ? shortGP(winner.score) : "0 GP"}
-                        />
-                      </div>
-
-                      <div className="mt-7 text-sm font-black text-yellow-500">
-                        VIEW RESULTS →
+                      <div className="gold-line mt-5" />
+                      <div className="mt-5 grid grid-cols-3 gap-3">
+                        <RaceStat label="Winner" value={winner?.playerName || "—"} />
+                        <RaceStat label="Score" value={winner ? shortGP(winner.score) : "0 GP"} />
+                        <RaceStat label="Racers" value={standings.length.toString()} />
                       </div>
                     </Link>
                   );
@@ -462,7 +338,7 @@ export default function LiveRacesPage() {
           </section>
         )}
       </section>
-    </main>
+    </FantasyShell>
   );
 }
 

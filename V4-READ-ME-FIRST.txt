@@ -1,0 +1,67 @@
+0GP RACE WEBSITE v4 - GENUINE FULL OVERHAUL
+
+This is NOT another small colour tweak.
+
+WHY THE LAST ONE LOOKED THE SAME
+--------------------------------
+Your old site was ALREADY a black/yellow modern dashboard.
+The last patch changed it into... another black/yellow modern dashboard.
+So visually it barely moved. That was the wrong design direction.
+
+THIS BUILD CHANGES THE VISUAL LANGUAGE
+--------------------------------------
+- Original dark-fantasy environment art behind the entire site
+- New 0GP Race game badge/logo
+- Medieval/fantasy arena feel instead of generic SaaS dashboard
+- Gold framed "game panels"
+- Floating embers
+- New homepage composition: ZERO GP. ONE CROWN.
+- New Live Races arena browser
+- New Hall of Battles race history
+- New Hall of Fame leaderboard with podium
+- New race-manual / How To Play page
+- Existing live race dashboard gets matching fantasy scenery
+
+LIVE COMMUNICATION HAS NOT BEEN REWRITTEN
+-----------------------------------------
+The website still uses the existing API.
+The Live Races page keeps its existing API polling.
+The individual race page keeps the same score fetch / timer behaviour.
+No RuneLite plugin changes are required.
+
+FILES OVERHAULED
+----------------
+app/page.tsx
+app/live/page.tsx
+app/history/page.tsx
+app/leaderboard/page.tsx
+app/docs/page.tsx
+app/race/[roomCode]/page.tsx
+app/globals.css
+app/components/FantasyShell.tsx
+public/fantasy-left.webp
+public/fantasy-right.webp
+public/0gp-race-logo.png
+
+HOW TO TEST
+-----------
+1. Back up your current website folder.
+2. Extract this ZIP OVER the existing website project.
+3. Stop any running dev server with Ctrl+C.
+4. Delete the Next cache:
+   Remove-Item -Recurse -Force .next
+5. Start:
+   npm.cmd run dev
+
+Check:
+http://localhost:3000/
+http://localhost:3000/live
+http://localhost:3000/history
+http://localhost:3000/leaderboard
+http://localhost:3000/docs
+
+Then open a real active race from the Live Races page.
+
+If you like this direction, the next upgrade can add genuine backend-persisted
+race history, full-race graph data, Bank Value, biggest drops/flips and event
+timelines instead of demo/locally observed data.

@@ -1,0 +1,20 @@
+0GP RACE WEBSITE v6.1 - UNCROWDED HOME + DISCORD BUTTON
+
+What changed:
+- Removed the forced narrow centre column that was squeezing/cutting content.
+- Character/dragon scenery stays visible.
+- Text and dashboard can now flow OVER the darker artwork, like the concept screenshot.
+- Homepage heading slightly reduced so it fits comfortably.
+- Shared top navigation now has a JOIN DISCORD button.
+- Discord button is a placeholder href="#" for now; replace it later with your invite URL.
+
+No API or RuneLite communication changes.
+
+Install:
+1. Extract over existing website.
+2. Ctrl+C
+3. Remove-Item -Recurse -Force .next
+4. npm.cmd run dev
+
+Check homepage first.
+Once this spacing is right, the same concept can be carried into the live race page.

@@ -1,43 +1,53 @@
 import Link from "next/link";
+import { FantasyShell, SiteNav, SectionTitle } from "../components/FantasyShell";
 
-const history = [
-  { room: "0GP-1184", winner: "Reedy", score: "83.4M GP", duration: "4h", players: 8 },
-  { room: "0GP-8742", winner: "Ganga", score: "51.8M GP", duration: "2h", players: 5 },
-  { room: "0GP-3391", winner: "Iron Mike", score: "144.2M GP", duration: "8h", players: 12 },
+const races = [
+  { room: "0GP-1184", winner: "Reedy", score: "83.4M GP", duration: "4h", players: 8, crown: "🥇" },
+  { room: "0GP-8742", winner: "Ganga", score: "51.8M GP", duration: "2h", players: 5, crown: "🥈" },
+  { room: "0GP-3391", winner: "Iron Mike", score: "144.2M GP", duration: "8h", players: 12, crown: "🏆" },
 ];
 
 export default function HistoryPage() {
   return (
-    <main className="min-h-screen bg-black text-white">
-      <nav className="border-b border-white/10 bg-black/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-xl font-black">0GP <span className="text-yellow-500">RACE</span></Link>
-          <span className="text-sm font-black text-zinc-500">RACE HISTORY</span>
-        </div>
-      </nav>
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <p className="text-sm font-black uppercase tracking-[0.3em] text-yellow-500">Archive</p>
-        <h1 className="mt-4 text-5xl font-black sm:text-7xl">RACE HISTORY</h1>
-        <p className="mt-6 max-w-2xl text-zinc-400">This page is ready for persistent backend data once completed races are stored.</p>
+    <FantasyShell>
+      <SiteNav active="history" />
+      <section className="site-center-wide px-4 py-14 sm:px-7 lg:py-20">
+        <SectionTitle
+          eyebrow="Hall of Battles"
+          title="Race History"
+          text="A visual archive for completed 0GP races. The current cards are demo records until permanent backend history is connected."
+        />
 
-        <div className="mt-12 space-y-4">
-          {history.map((r) => (
-            <div key={r.room} className="grid gap-5 rounded-2xl border border-white/10 bg-zinc-950 p-6 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
-              <div>
-                <p className="font-mono text-sm text-yellow-500">{r.room}</p>
-                <p className="mt-2 text-xl font-black">{r.winner} won</p>
+        <div className="mt-12 grid gap-5">
+          {races.map((r, i) => (
+            <article key={r.room} className="game-panel overflow-hidden rounded-2xl">
+              <div className="grid gap-5 p-6 md:grid-cols-[90px_1fr_auto] md:items-center md:p-7">
+                <div className="grid h-20 w-20 place-items-center rounded-full border border-yellow-500/25 bg-yellow-500/[.07] text-4xl">
+                  {r.crown}
+                </div>
+                <div>
+                  <div className="font-mono text-xs font-black tracking-widest text-yellow-400">{r.room}</div>
+                  <h2 className="mt-2 text-2xl font-black">{r.winner} claimed the crown</h2>
+                  <p className="mt-2 text-sm text-zinc-600">Race #{races.length-i} • completed event record</p>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Info label="WINNING SCORE" value={r.score} gold />
+                  <Info label="DURATION" value={r.duration} />
+                  <Info label="RACERS" value={String(r.players)} />
+                </div>
               </div>
-              <Info label="Winning score" value={r.score} />
-              <Info label="Duration" value={r.duration} />
-              <Info label="Players" value={String(r.players)} />
-            </div>
+            </article>
           ))}
         </div>
+
+        <div className="game-panel mt-8 rounded-2xl p-6 text-sm leading-7 text-zinc-500">
+          Permanent race history will become fully live once completed race records are stored by the hosted backend.
+        </div>
       </section>
-    </main>
+    </FantasyShell>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-xs uppercase text-zinc-600">{label}</p><p className="mt-1 font-black">{value}</p></div>;
+function Info({ label, value, gold=false }: { label:string; value:string; gold?:boolean }) {
+  return <div className="min-w-[100px] border-l border-yellow-500/15 pl-4"><div className="text-[8px] font-black tracking-[.18em] text-zinc-700">{label}</div><div className={`mt-2 font-black ${gold?"text-yellow-300":"text-zinc-200"}`}>{value}</div></div>;
 }
